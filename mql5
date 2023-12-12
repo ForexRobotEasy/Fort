@@ -1,0 +1,81 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                   Fort.mq5       |
+//|                      Forex Robot Easy Team - forexroboteasy.com  |
+//+------------------------------------------------------------------+
+
+// Define input parameters
+input double GridSize = 10; // Grid size in pips
+input double Range = 50; // Price range to profit from in pips
+input double LotSize = 0.01; // Lot size for each order
+input double StopLoss = 50; // Stop loss in pips
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Add initialization code here
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Add deinitialization code here
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Get current price
+   double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+   // Calculate grid levels
+   double gridLevel = NormalizeDouble(currentPrice - (GridSize / 2), _Digits);
+   double upperLevel = gridLevel + Range;
+   double lowerLevel = gridLevel - Range;
+
+   // Check if we have any open positions
+   int totalPositions = PositionsTotal();
+   if (totalPositions == 0)
+   {
+      // No open positions, place initial orders
+      OrderSend(_Symbol, OP_BUY, LotSize, currentPrice, StopLoss, 0, 0, 'Fort', 0, 0, clrGreen);
+      OrderSend(_Symbol, OP_SELL, LotSize, currentPrice, StopLoss, 0, 0, 'Fort', 0, 0, clrRed);
+   }
+   else
+   {
+      // Check if price has reached upper or lower level
+      if (currentPrice >= upperLevel)
+      {
+         // Close all buy positions and open new sell position
+         for (int i = totalPositions - 1; i >= 0; i--)
+         {
+            if (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+               OrderClose(PositionGetTicket(), PositionGetDouble(POSITION_VOLUME), currentPrice, 0, clrRed);
+         }
+         OrderSend(_Symbol, OP_SELL, LotSize, currentPrice, StopLoss, 0, 0, 'Fort', 0, 0, clrRed);
+      }
+      else if (currentPrice <= lowerLevel)
+      {
+         // Close all sell positions and open new buy position
+         for (int i = totalPositions - 1; i >= 0; i--)
+         {
+            if (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+               OrderClose(PositionGetTicket(), PositionGetDouble(POSITION_VOLUME), currentPrice, 0, clrGreen);
+         }
+         OrderSend(_Symbol, OP_BUY, LotSize, currentPrice, StopLoss, 0, 0, 'Fort', 0, 0, clrGreen);
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Custom functions                                                  |
+//+------------------------------------------------------------------+
+// Add any custom functions here
+
